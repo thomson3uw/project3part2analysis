@@ -27,6 +27,127 @@ h4.date {
 </style>
 <!--- End styling code. --->
 
-```{r}
-
+```{r, message = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(randomForest)
+library(kableExtra)
 ```
+
+# Data
+
+```{r}
+# load the my_rf_cv function
+source("../Code/my_rf_cv.R")
+
+# load in the data sets in the Data folder
+my_gapminder <- read.csv("../Data/my_gapminder.csv")
+my_penguins <- read.csv("../Data/my_penguins.csv")
+```
+
+```{r}
+# create the matrix to store all the simulated MSEs
+my_cv_MSEs <- matrix(NA, nrow = 30, ncol = 3)
+counter <- 1
+for (k in c(2, 5, 10)) {
+  k_MSE <- c()
+  for (i in 1:30) {
+    k_MSE[i] <- my_rf_cv(k)
+  }
+  # store the 30 simulated values for this k in its own row of the overall matrix
+  my_cv_MSEs[, counter] <- k_MSE
+  counter <- counter + 1
+}
+# the matrix of the generated average MSEs
+head(my_cv_MSEs)
+```
+
+# Figures
+
+In the code below we generate and save three boxplots of the 30 average MSEs we generated in the section above.
+
+```{r, warning = FALSE, message = FALSE}
+k2_cv_MSEs <- data.frame("MSE" = my_cv_MSEs[, 1])
+k2_box_plot <- ggplot(data = k2_cv_MSEs, aes(x = "", y = MSE)) +
+  geom_boxplot(fill = "lightblue") +
+  theme_classic(base_size = 15) +
+  labs(title = "A boxplot of the average MSE from k-fold cross validation \n of random forests run 30 times using k = 2",
+       x = "k = 2", y = "Average MSE") +
+  theme(plot.title = element_text(hjust = 0.5))
+# save the k = 2 boxplot
+ggsave(plot = k2_box_plot, filename = "k2_box_plot.png", path = "../Output/Figures")
+
+k2_box_plot
+```
+
+```{r, warning = FALSE, message = FALSE}
+k5_cv_MSEs <- data.frame("MSE" = my_cv_MSEs[, 2])
+k5_box_plot <- ggplot(data = k5_cv_MSEs, aes(x = "", y = MSE)) +
+  geom_boxplot(fill = "red") +
+  theme_classic(base_size = 15) +
+  labs(title = "A boxplot of the average MSE from k-fold cross validation \n of random forests run 30 times using k = 5",
+       x = "k = 5", y = "Average MSE") +
+  theme(plot.title = element_text(hjust = 0.5))
+# save the k = 5 boxplot
+ggsave(plot = k5_box_plot, filename = "k5_box_plot.png", path = "../Output/Figures")
+
+k5_box_plot
+```
+
+```{r, warning = FALSE, message = FALSE}
+k10_cv_MSEs <- data.frame("MSE" = my_cv_MSEs[, 3])
+k10_box_plot <- ggplot(data = k10_cv_MSEs, aes(x = "", y = MSE)) +
+  geom_boxplot(fill = "lightgreen") +
+  theme_classic(base_size = 15) +
+  labs(title = "A boxplot of the average MSE from k-fold cross validation \n of random forests run 30 times using k = 10",
+       x = "k = 10", y = "Average MSE") +
+  theme(plot.title = element_text(hjust = 0.5))
+# save the k = 10 boxplot
+ggsave(plot = k10_box_plot, filename = "k10_box_plot.png", path = "../Output/Figures")
+
+k10_box_plot
+```
+
+# Summary Statistics
+
+In this section, we create a table of summary statistics of the average MSEs for each value of $k$ and then save that table and the data frame of all the generated average MSEs to files in the Results folder.
+
+```{r}
+# create a table with each value of k and the corresponding summary statistics
+my_MSE_table <- matrix(NA, nrow = 3, ncol = 3)
+
+my_MSE_table[1, 1] <- 2
+my_MSE_table[2, 1] <- 5
+my_MSE_table[3, 1] <- 10
+
+my_MSE_table[1, 2] <- mean(my_cv_MSEs[, 1])
+my_MSE_table[2, 2] <- mean(my_cv_MSEs[, 2])
+my_MSE_table[3, 2] <- mean(my_cv_MSEs[, 3])
+
+my_MSE_table[1, 3] <- sd(my_cv_MSEs[, 1])
+my_MSE_table[2, 3] <- sd(my_cv_MSEs[, 2])
+my_MSE_table[3, 3] <- sd(my_cv_MSEs[, 3])
+
+my_MSE_table <- data.frame(my_MSE_table)
+colnames(my_MSE_table) <- c("k", "mean", "standard deviation")
+
+# display the table
+kable_styling(kable(my_MSE_table))
+```
+
+```{r}
+# save the summary statistic table in the results folder of output
+saveRDS(my_MSE_table, file = "../Output/Results/summary_stat_table.rds")
+
+output_results <- data.frame(my_cv_MSEs)
+colnames(output_results) <- c("k2", "k5", "k10")
+
+# store the results in their own csv in the results folder of output
+write_csv(output_results, file = "../Output/Results/simulated_results.csv")
+```
+
+
+
+
+
+
